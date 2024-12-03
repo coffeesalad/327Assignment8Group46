@@ -1,17 +1,96 @@
 import socket
 import threading
 from pymongo import MongoClient
+from datetime import datetime, timedelta
 
 def db_connection():
     try:
         client = MongoClient("mongodb+srv://cmurray901:Mccade1102@327database.wv31l.mongodb.net/?retryWrites=true&w=majority&appName=327Database")
-        db = client[test]
+        db = client["test"]
         return db
-    except Exception as e
+    except Exception as e:
         print(f"error connecting to database: {e}")
         return None
 
+def query_processes(query, db):
+    try:
+        if query == '1':
+            fridgeObj = db.MongoData_metadata.find_one({"customAttributes.name": "Smart Fridge"})
+            if not fridgeObj:
+                return "Error: No metadata found for Smart Fridge."
+            fridgeId = fridgeObj["assetUid"]
+
+            three_hours_ago = datetime.utcnow() - timedelta(hours=3)
+            data = db.MongoData_virtual.find({"payload.parent_asset_uid": fridgeId, "payload.timestamp": {"$gte": three_hours_ago}})
+            if not data:
+                return "Error: No recent data found for Smart Fridge."
+
+            count = 0
+            total = 0
+            for item in data:
+                count += 1
+                total += float(item["payload"]["Moisture Meter - Moisture Sensor"])
+
+            if count == 0:
+                return "Error: No valid moisture data in the past 3 hours."
+            avg_moisture = total / count
+            return f"Average moisture level over the last 3 hours: {avg_moisture} (g/m^3)"
+
+        elif query == '2':
+            dishObj = db.MongoData_metadata.find_one({"customAttributes.name": "Dishwasher"})
+            if not dishObj:
+                return "Error: No metadata found for Dishwasher."
+            dishId = dishObj["assetUid"]
+
+            data = db.MongoData_virtual.find({"payload.parent_asset_uid": dishId})
+            if not data:
+                return "Error: No data found for Dishwasher."
+
+            count = 0
+            total = 0
+            for item in data:
+                count += 1
+                total += float(item["payload"]["Capacitive Liquid Level Sensor - Water Consumption Sensor"])
+
+            if count == 0:
+                return "Error: No valid water consumption data."
+            avg_consumption = total / count
+            return f"Average water consumption per cycle: {avg_consumption} gallons"
+
+        elif query == '3':
+            devices = [
+                {"name": "Smart Fridge", "sensor": "MQ-2 - Ammeter"},
+                {"name": "Dishwasher", "sensor": "MQ-136 - Ammeter"},
+                {"name": "device 1 e98a1211-97a3-4e14-8c71-06a2f99ffce1", "sensor": "sensor 3 e98a1211-97a3-4e14-8c71-06a2f99ffce1"}
+            ]
+
+            power_consumption = {}
+            for device in devices:
+                obj = db.MongoData_metadata.find_one({"customAttributes.name": device["name"]})
+                if not obj:
+                    return f"Error: No metadata found for {device['name']}."
+                deviceId = obj["assetUid"]
+
+                data = db.MongoData_virtual.find({"payload.parent_asset_uid": deviceId})
+                total_power = 0
+                for item in data:
+                    total_power += float(item["payload"][device["sensor"]])
+                power_consumption[device["name"]] = total_power
+
+            highest_consumer = max(power_consumption, key=power_consumption.get)
+            return f"Highest consumer: {highest_consumer} ({power_consumption[highest_consumer]} Watts)"
+        else:
+            return "Invalid query. Valid queries: 1, 2, 3."
+    except Exception as e:
+        return f"Error processing query: {str(e)}"
+
+
+
+
+
 def start_server():
+    db = db_connection()
+
     host = input("Enter server IP address (e.g., '0.0.0.0' for all interfaces): ")
     port = int(input("Enter server port: "))
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,9 +101,9 @@ def start_server():
     while True:
         client_socket, client_address = server_socket.accept()
         print(f"Connected to client {client_address}")
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
+        threading.Thread(target=handle_client, args=(client_socket, db)).start()
 
-def handle_client(client_socket):
+def handle_client(client_socket, db):
     try:
         while True:
             data = client_socket.recv(1024).decode()
@@ -32,7 +111,8 @@ def handle_client(client_socket):
                 print("Client disconnected.")
                 break
             print(f"Received from client: {data}")
-            client_socket.sendall(f"Server's reply: {data}".encode())
+            response = query_processes(data, db)
+            client_socket.sendall(response.encode())
     finally:
         client_socket.close()
 
@@ -43,13 +123,24 @@ def start_client():
     client_socket.connect((server_ip, server_port))
     print("Connected to the server.")
 
+    valid_queries = {
+        "1": "What is the average moisture inside my kitchen fridge in the past three hours?",
+        "2": "What is the average water consumption per cycle in my smart dishwasher?",
+        "3": "Which device consumed more electricity among my three IoT devices?",
+    }
     try:
         while True:
-            message = input("Enter message to send to the server (or type 'exit' to quit): ")
-            if message.lower() == "exit":
+            print("Valid queries:")
+            for key, query in valid_queries.items():
+                print(f"{key}: {query}")
+            user_input = input("Enter query number (or type 'exit' to quit): ")
+            if user_input.lower() == "exit":
                 print("Exiting...")
                 break
-            client_socket.sendall(message.encode())
+            if user_input not in valid_queries:
+                print("Invalid input. Please try one of the valid queries.")
+                continue
+            client_socket.sendall(user_input.encode())
             response = client_socket.recv(1024).decode()
             print(f"Server's reply: {response}")
     finally:
