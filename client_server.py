@@ -1,5 +1,15 @@
 import socket
 import threading
+from pymongo import MongoClient
+
+def db_connection():
+    try:
+        client = MongoClient("mongodb+srv://cmurray901:Mccade1102@327database.wv31l.mongodb.net/?retryWrites=true&w=majority&appName=327Database")
+        db = client[test]
+        return db
+    except Exception as e
+        print(f"error connecting to database: {e}")
+        return None
 
 def start_server():
     host = input("Enter server IP address (e.g., '0.0.0.0' for all interfaces): ")
