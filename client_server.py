@@ -21,7 +21,7 @@ def query_processes(query, db):
             fridgeId = fridgeObj["assetUid"]
 
             three_hours_ago = datetime.utcnow() - timedelta(hours=3)
-            data = db.MongoData_virtual.find({"payload.parent_asset_uid": fridgeId, "payload.timestamp": {"$gte": three_hours_ago}})
+            data = db.MongoData_virtual.find({"payload.parent_asset_uid": fridgeId, "time": {"$gte": three_hours_ago}})
             if not data:
                 return "Error: No recent data found for Smart Fridge."
 
@@ -29,7 +29,7 @@ def query_processes(query, db):
             total = 0
             for item in data:
                 count += 1
-                total += float(item["payload"]["Moisture Meter - Moisture Sensor"])
+                total += float(item["payload"].get("Moisture Meter - Moisture Sensor", 0))
 
             if count == 0:
                 return "Error: No valid moisture data in the past 3 hours."
@@ -50,7 +50,7 @@ def query_processes(query, db):
             total = 0
             for item in data:
                 count += 1
-                total += float(item["payload"]["Capacitive Liquid Level Sensor - Water Consumption Sensor"])
+                total += float(item["payload"].get("Capacitive Liquid Level Sensor - Water Consumption Sensor", 0))
 
             if count == 0:
                 return "Error: No valid water consumption data."
@@ -74,7 +74,7 @@ def query_processes(query, db):
                 data = db.MongoData_virtual.find({"payload.parent_asset_uid": deviceId})
                 total_power = 0
                 for item in data:
-                    total_power += float(item["payload"][device["sensor"]])
+                    total_power += float(item["payload"].get(device["sensor"], 0))
                 power_consumption[device["name"]] = total_power
 
             highest_consumer = max(power_consumption, key=power_consumption.get)
