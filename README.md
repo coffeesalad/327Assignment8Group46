@@ -16,10 +16,15 @@ To Run this project as a server
 
 1. Save the provided Python script (iot_server_client.py)
 2.Open a terminal and navigate to the directory where the script is saved.
+
 Run the following command: python iot_server_client.py
+
 When prompted "Do you want to run as a (s)erver or (c)lient? " choose s to start the server: S
+
 Enter server IP address: localhost
+
 Enter server port: 5000
+
 3. The server will now listen for incoming client connections.
 
 For Client 
