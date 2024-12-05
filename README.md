@@ -2,7 +2,7 @@
 
 Nay Oo & Carter Murray
 
-The project was collaboratively developed using **Replit**, an online IDE that allowed us to share and test the code in real time.
+The project was collaboratively developed using **Replit**, an online IDE that allowed us to simultaneously edit the code. Testing performed in Google Cloud virtual machines.
 
 
 ## Prerequisites
