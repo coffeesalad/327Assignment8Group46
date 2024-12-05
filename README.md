@@ -21,7 +21,7 @@ Run the following command: python iot_server_client.py
 
 When prompted "Do you want to run as a (s)erver or (c)lient? " choose s to start the server: S
 
-Enter server IP address: localhost
+Enter server IP address: "input the IP address"
 
 Enter server port: 5000
 
@@ -31,7 +31,7 @@ For Client
 1. Open a new terminal and navigate to the same directory.
 2. Run the following command: python iot_server_client.py
 3. When prompted "Do you want to run as a (s)erver or (c)lient? " choose c to start the server: c
-4. Please enter the server's IP address: localhost
+4. Please enter the server's IP address: "put the ip"
 5. Please enter the server's port: 5000
        Choose from the valid query options:
 		1: Average moisture inside the Smart Fridge in the past three hours.
