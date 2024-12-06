@@ -2,7 +2,7 @@ import socket
 import threading
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-#from pytz import timezone, utc
+from pytz import timezone, utc
 
 def db_connection():
     try:
@@ -13,13 +13,12 @@ def db_connection():
         print(f"error connecting to database: {e}")
         return None
         
-"""
+
 def convert_to_pst(utc_time):
     pacific = timezone('US/Pacific')
     utc_dt = utc.localize(utc_time)
     pst_dt = utc_dt.astimezone(pacific)
     return pst_dt
-"""
     
 def query_processes(query, db):
     try:
@@ -29,7 +28,7 @@ def query_processes(query, db):
                 return "Error: No metadata found for Smart Fridge."
             fridgeId = fridgeObj["assetUid"]
 
-            three_hours_ago = datetime.utcnow() - timedelta(hours=3)
+            three_hours_ago = convert_to_pst(datetime.utcnow()) - timedelta(hours=3)
             data = db.MongoData_virtual.find({"payload.parent_asset_uid": fridgeId, "time": {"$gte": three_hours_ago}})
             if not data:
                 return "Error: No recent data found for Smart Fridge."
